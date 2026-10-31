@@ -149,6 +149,6 @@ go test ./... -timeout 60s
 go vet ./...
 ```
 
-CI runs tests, static checks, a build, and a report smoke test on Windows and Linux.
+Run validation locally; this repository does not include GitHub Actions workflows.
 This complements hands-on cluster labs by making probe decisions reproducible and
 their consequences inspectable.

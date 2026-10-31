@@ -1,0 +1,15 @@
+name: Slow startup interrupted or protected
+duration: 120s
+restartDelay: 1s
+application:
+  startupDuration: 30s
+variants:
+  - name: aggressive-liveness
+    probes:
+      liveness: {periodSeconds: 5, failureThreshold: 3}
+      readiness: {periodSeconds: 5}
+  - name: startup-protected
+    probes:
+      startup: {periodSeconds: 5, failureThreshold: 10}
+      liveness: {periodSeconds: 5, failureThreshold: 3}
+      readiness: {periodSeconds: 5}

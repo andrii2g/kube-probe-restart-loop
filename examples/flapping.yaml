@@ -1,0 +1,13 @@
+name: Readiness threshold tradeoffs
+duration: 40s
+application:
+  windows:
+    - {from: 10s, to: 12s, clock: scenario, state: overloaded, canServe: false, responses: {readiness: {success: false}}}
+    - {from: 14s, to: 16s, clock: scenario, state: overloaded, canServe: false, responses: {readiness: {success: false}}}
+variants:
+  - name: responsive
+    probes:
+      readiness: {periodSeconds: 2, failureThreshold: 1, successThreshold: 1}
+  - name: dampened
+    probes:
+      readiness: {periodSeconds: 2, failureThreshold: 2, successThreshold: 2}

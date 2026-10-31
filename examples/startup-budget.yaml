@@ -1,0 +1,13 @@
+name: Startup probe can also kill initialization
+duration: 120s
+application:
+  startupDuration: 30s
+variants:
+  - name: insufficient-budget
+    probes:
+      startup: {periodSeconds: 5, failureThreshold: 3}
+      readiness: {periodSeconds: 5}
+  - name: sufficient-budget
+    probes:
+      startup: {periodSeconds: 5, failureThreshold: 10}
+      readiness: {periodSeconds: 5}

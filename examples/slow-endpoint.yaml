@@ -1,0 +1,14 @@
+name: Timeout false failures
+duration: 60s
+application:
+  startupDuration: 0s
+  responseLatency: 1500ms
+variants:
+  - name: timeout-too-short
+    probes:
+      liveness: {periodSeconds: 5, timeoutSeconds: 1}
+      readiness: {periodSeconds: 5, timeoutSeconds: 1}
+  - name: timeout-sufficient
+    probes:
+      liveness: {periodSeconds: 5, timeoutSeconds: 2}
+      readiness: {periodSeconds: 5, timeoutSeconds: 2}

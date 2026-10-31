@@ -1,0 +1,23 @@
+name: Overload incorrectly wired to liveness
+duration: 120s
+application:
+  startupDuration: 5s
+  windows:
+    - from: 40s
+      to: 60s
+      clock: scenario
+      state: overloaded
+      canServe: false
+      responses:
+        readiness: {success: false}
+        liveness: {success: false}
+variants:
+  - name: readiness-only
+    probes:
+      startup: {periodSeconds: 1, failureThreshold: 10}
+      readiness: {periodSeconds: 5, failureThreshold: 1}
+  - name: overload-causes-restarts
+    probes:
+      startup: {periodSeconds: 1, failureThreshold: 10}
+      liveness: {periodSeconds: 5, failureThreshold: 1}
+      readiness: {periodSeconds: 5, failureThreshold: 1}

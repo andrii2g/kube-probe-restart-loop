@@ -186,3 +186,68 @@ func TestValidation(t *testing.T) {
 		t.Fatal("accepted zero duration")
 	}
 }
+
+func TestInitialDelayAndHorizon(t *testing.T) {
+	c := base()
+	c.Duration = 10 * time.Second
+	c.Application.StartupDuration = 0
+	p := probe(2, 1)
+	p.InitialDelaySeconds = 10
+	c.Probes[Readiness] = p
+	r := run(t, c)
+	if r.Metrics.FirstReady != nil || r.Metrics.Unavailable != c.Duration {
+		t.Fatal(r.Metrics)
+	}
+	for _, e := range r.Events {
+		if e.Type == "probe_started" {
+			t.Fatal("probe executed at excluded horizon")
+		}
+	}
+	p.InitialDelaySeconds = 3
+	c.Probes[Readiness] = p
+	r = run(t, c)
+	if *r.Metrics.FirstReady != 3*time.Second {
+		t.Fatal(r.Metrics)
+	}
+}
+
+func TestReadinessFailureThresholdPreservesTraffic(t *testing.T) {
+	c := base()
+	c.Application.StartupDuration = 0
+	c.Probes[Readiness] = probe(2, 2)
+	c.Application.Windows = []Window{{From: 10 * time.Second, To: 20 * time.Second, Clock: "scenario", CanServe: boolp(false), Responses: map[Kind]Response{Readiness: {Success: false}}}}
+	r := run(t, c)
+	if r.Metrics.Unavailable != 8*time.Second || r.Metrics.ReadyButUnable != 2*time.Second {
+		t.Fatal(r.Metrics)
+	}
+}
+
+func TestLongProbesDoNotOverlap(t *testing.T) {
+	c := base()
+	c.Duration = 12 * time.Second
+	c.Application.StartupDuration = 0
+	c.Application.ResponseLatency = 3 * time.Second
+	p := probe(2, 1)
+	p.TimeoutSeconds = 4
+	c.Probes[Readiness] = p
+	r := run(t, c)
+	var starts []time.Duration
+	for _, e := range r.Events {
+		if e.Type == "probe_started" {
+			starts = append(starts, e.At)
+		}
+	}
+	if !reflect.DeepEqual(starts, []time.Duration{0, 4 * time.Second, 8 * time.Second}) {
+		t.Fatal(starts)
+	}
+}
+
+func TestEventBudget(t *testing.T) {
+	c := base()
+	c.Duration = time.Hour
+	c.RestartDelay = time.Millisecond
+	c.Probes[Liveness] = probe(1, 1)
+	if _, err := Run(c); err == nil {
+		t.Fatal("expected bounded execution error")
+	}
+}

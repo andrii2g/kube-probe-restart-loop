@@ -76,6 +76,9 @@ func (c Config) Validate() error {
 		return fmt.Errorf("termination delay must be in [0, 24h]; restart delay in [1ms, 24h]")
 	}
 	a := c.Application
+	if len(a.Windows) > 128 {
+		return fmt.Errorf("at most 128 application windows are supported")
+	}
 	if a.StartupDuration < 0 || a.StartupDuration > 24*time.Hour || a.ResponseLatency < 0 || a.ResponseLatency > 24*time.Hour {
 		return fmt.Errorf("application durations must be in [0, 24h]")
 	}

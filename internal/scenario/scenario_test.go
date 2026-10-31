@@ -47,6 +47,54 @@ func TestDefaults(t *testing.T) {
 		t.Fatal(c)
 	}
 }
+
+func TestExampleOutcomes(t *testing.T) {
+	expected := map[string]struct {
+		restarts int
+		first    time.Duration
+		never    bool
+	}{
+		"aggressive-liveness": {10, 0, true}, "startup-protected": {0, 30 * time.Second, false},
+		"readiness-withdrawal": {0, 5 * time.Second, false}, "readiness-only": {0, 5 * time.Second, false},
+		"overload-causes-restarts": {4, 5 * time.Second, false}, "timeout-too-short": {4, 0, true},
+		"timeout-sufficient": {0, 1500 * time.Millisecond, false}, "responsive": {0, 0, false},
+		"dampened": {0, 2 * time.Second, false}, "insufficient-budget": {10, 0, true},
+		"sufficient-budget": {0, 30 * time.Second, false},
+	}
+	paths, _ := filepath.Glob("../../examples/*.yaml")
+	for _, path := range paths {
+		f, err := os.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		configs, err := Load(f)
+		f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, c := range configs {
+			r, err := sim.Run(c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, ok := expected[c.Name]
+			if !ok {
+				t.Fatalf("no expected outcome for %s", c.Name)
+			}
+			m := r.Metrics
+			if m.Restarts != want.restarts || (m.FirstReady == nil) != want.never {
+				t.Fatalf("%s: %+v", c.Name, m)
+			}
+			if !want.never && *m.FirstReady != want.first {
+				t.Fatalf("%s: first ready %s", c.Name, *m.FirstReady)
+			}
+			derived := 1 - float64(m.Unavailable+m.ReadyButUnable)/float64(c.Duration)
+			if diff := m.Availability - derived; diff < -1e-10 || diff > 1e-10 {
+				t.Fatalf("%s: availability accounting mismatch", c.Name)
+			}
+		}
+	}
+}
 func TestRejectInvalidInput(t *testing.T) {
 	cases := []string{
 		strings.Replace(minimal, "readiness: {}", "readiness: {periodSeconds: 0}", 1),

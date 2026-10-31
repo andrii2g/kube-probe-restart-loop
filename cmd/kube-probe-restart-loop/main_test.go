@@ -23,6 +23,9 @@ func TestCompareAndRun(t *testing.T) {
 			if !strings.Contains(string(data), "aggressive-liveness") {
 				t.Fatal("missing first variant")
 			}
+			if _, err := os.Stat(filepath.Join(dir, "timeline.svg")); err != nil {
+				t.Fatal(err)
+			}
 			if strings.Contains(out.String(), "startup-protected") != (mode == "compare") {
 				t.Fatal(out.String())
 			}

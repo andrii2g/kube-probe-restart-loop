@@ -10,4 +10,7 @@ the final behavior and limitations are described in the README and simulation co
    slow-start comparison yields 10 restarts and never ready without startup protection,
    versus zero restarts, first readiness at 30s, and 75% availability with protection.
 3. **Reports and delivery:** SVG timelines, comparison reports, full usage and
-   simulation contract, CI, and end-to-end verification.
+   simulation contract, CI, and end-to-end verification. Validation: `go test ./...`,
+   `go vet ./...`, executable build, all six example comparisons, deterministic
+   output checks, XML parsing, and visual inspection of the slow-start SVG in Edge.
+   Windows checks ran locally; Linux CI is configured but was not run locally.

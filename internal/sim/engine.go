@@ -14,6 +14,7 @@ type Event struct {
 	Detail   string        `json:"detail"`
 }
 type Span struct {
+	Phase    string        `json:"phase"`
 	From     time.Duration `json:"from"`
 	To       time.Duration `json:"to"`
 	Instance int           `json:"instance"`
@@ -83,7 +84,12 @@ func Run(c Config) (Result, error) {
 		e.r.Metrics.Timeouts[k] = 0
 	}
 	e.push(scheduled{typ: "start"})
+	processed := 0
 	for e.q.Len() > 0 {
+		processed++
+		if processed > 250000 {
+			return Result{}, fmt.Errorf("simulation exceeds 250000 scheduled events; shorten duration or increase probe/restart intervals")
+		}
 		x := heap.Pop(&e.q).(scheduled)
 		if x.at >= c.Duration {
 			break
@@ -269,9 +275,9 @@ func (e *engine) integrate(to time.Duration) {
 	} else if e.phase == "waiting" {
 		state = "restart wait"
 	}
-	span := Span{From: e.now, To: to, Instance: e.instance, State: state, Ready: e.ready, CanServe: serve}
+	span := Span{Phase: e.phase, From: e.now, To: to, Instance: e.instance, State: state, Ready: e.ready, CanServe: serve}
 	n := len(e.r.Spans)
-	if n > 0 && e.r.Spans[n-1].To == span.From && e.r.Spans[n-1].Instance == span.Instance && e.r.Spans[n-1].State == state && e.r.Spans[n-1].Ready == span.Ready && e.r.Spans[n-1].CanServe == serve {
+	if n > 0 && e.r.Spans[n-1].To == span.From && e.r.Spans[n-1].Phase == span.Phase && e.r.Spans[n-1].Instance == span.Instance && e.r.Spans[n-1].State == state && e.r.Spans[n-1].Ready == span.Ready && e.r.Spans[n-1].CanServe == serve {
 		e.r.Spans[n-1].To = to
 	} else {
 		e.r.Spans = append(e.r.Spans, span)

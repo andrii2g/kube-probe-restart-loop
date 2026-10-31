@@ -40,5 +40,8 @@ func Write(dir string, results []sim.Result) error {
 	if err = os.WriteFile(filepath.Join(dir, "events.json"), append(data, '\n'), 0644); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "summary.txt"), []byte(Summary(results)), 0644)
+	if err = os.WriteFile(filepath.Join(dir, "summary.txt"), []byte(Summary(results)), 0644); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "timeline.svg"), []byte(SVG(results)), 0644)
 }
